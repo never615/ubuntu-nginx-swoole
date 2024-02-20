@@ -20,7 +20,7 @@ ENV php_vars_dir /etc/php/8.3/cli/conf.d
 
 #禁用任何交互式提示
 ENV DEBIAN_FRONTEND noninteractive
-ENV SUPERVISOR_PHP_COMMAND="/usr/bin/php -d variables_order=EGPCS /var/www/html/artisan serve --host=0.0.0.0 --port=80"
+#ENV SUPERVISOR_PHP_COMMAND="/usr/bin/php -d variables_order=EGPCS /var/www/html/artisan serve --host=0.0.0.0 --port=80"
 
 
 # modify root password
