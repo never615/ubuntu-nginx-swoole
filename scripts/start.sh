@@ -12,12 +12,6 @@ fi
 
 chmod -R ugo+rw /.composer
 
-if [ $# -gt 0 ]; then
-    exec gosu $WWWUSER "$@"
-else
-    exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
-fi
-
 echo '-------- run laravel sail scripts end  ----------'
 
 
@@ -70,7 +64,7 @@ echo '-------- supervisor ----------'
 # touch /var/www/html/storage/logs/worker.log
 touch /var/www/html/storage/logs/horizon.log
 
-cp /var/www/html/conf/supervisor/* /etc/supervisord.d
+cp /var/www/html/conf/supervisor/* /etc/supervisor/conf.d
 
 # crontab
 # echo '-------- crontab ----------'
@@ -130,4 +124,4 @@ echo '-------- run start scripts end  ----------'
 
 
 # Start supervisord and services
-supervisord -n -c /etc/supervisord.conf
+supervisord -n -c /etc/supervisor/supervisord.conf
