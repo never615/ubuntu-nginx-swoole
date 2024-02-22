@@ -16,10 +16,6 @@ ENV RUN_SCRIPTS 1
 ENV php_vars /etc/php/8.3/cli/conf.d/docker-vars.ini
 ENV php_vars_dir /etc/php/8.3/cli/conf.d
 
-ENV supervisor_dir  /etc/supervisor/conf.d/
-
-
-
 #禁用任何交互式提示
 ENV DEBIAN_FRONTEND noninteractive
 #ENV SUPERVISOR_PHP_COMMAND="/usr/bin/php -d variables_order=EGPCS /var/www/html/artisan serve --host=0.0.0.0 --port=80"
@@ -103,8 +99,9 @@ RUN pecl install mongodb
 
 
 #supervisord
-ADD conf/supervisord.conf $supervisor_dir/supervisord.conf
-COPY conf/supervisord.d/ $supervisor_dir/supervisord.d/
+ADD conf/supervisord.conf /etc/supervisor/supervisord.conf
+COPY conf/supervisord.d/ /etc/supervisor/conf.d
+
 
 # Install ngixn
 # forward request and error logs to docker log collector
