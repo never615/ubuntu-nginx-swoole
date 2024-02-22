@@ -100,7 +100,7 @@ RUN pecl install mongodb
 
 #supervisord
 ADD conf/supervisord.conf /etc/supervisor/supervisord.conf
-COPY conf/supervisord.d/ /etc/supervisor/conf.d
+COPY conf/supervisord.d/ /etc/supervisor/supervisord.d
 
 
 
