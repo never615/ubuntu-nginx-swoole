@@ -2,4 +2,4 @@ SHELL=/bin/bash
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 MAILTO=root
 
-* * * * * nginx php /var/www/html/artisan schedule:run >> /dev/null 2>&1
+* * * * * www php /var/www/html/artisan schedule:run >> /dev/null 2>&1
