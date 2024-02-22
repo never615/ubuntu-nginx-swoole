@@ -75,8 +75,8 @@ mkdir /var/www/html/storage/framework/cache/data
 
 # Make writable dirs
 echo '-------- Make writable dirs ----------'
-chown -R www /var/www/html/storage
-chgrp -R www /var/www/html/storage
+chown -R www-data /var/www/html/storage
+chgrp -R www-data /var/www/html/storage
 chmod -R 777 /var/www/html/storage
 
 
@@ -92,8 +92,8 @@ php artisan config:cache
 php artisan optimize
 
 echo '-------- Make writable dirs2 ----------'
-chown -R www /var/www/html/storage
-chgrp -R www /var/www/html/storage
+chown -R www-data /var/www/html/storage
+chgrp -R www-data /var/www/html/storage
 chmod -R 777 /var/www/html/storage
 
 # migrate
