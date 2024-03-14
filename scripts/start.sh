@@ -1,27 +1,49 @@
 #!/bin/bash
 
-echo '-------- run laravel sail scripts start  ----------'
+#echo '-------- run laravel sail scripts start  ----------'
+#
+# if [ ! -z "$WWWUSER" ]; then
+#     usermod -u $WWWUSER sail
+# fi
+#
+#if [ ! -d /.composer ]; then
+#    mkdir /.composer
+#fi
+#
+#chmod -R ugo+rw /.composer
+#
+#echo '-------- run laravel sail scripts end  ----------'
 
- if [ ! -z "$WWWUSER" ]; then
-     usermod -u $WWWUSER sail
- fi
 
-if [ ! -d /.composer ]; then
-    mkdir /.composer
-fi
-
-chmod -R ugo+rw /.composer
-
-echo '-------- run laravel sail scripts end  ----------'
 
 
 echo '-------- run start scripts start  ----------'
+
+# Disable Strict Host checking for non interactive git clones
+
+mkdir -p -m 0700 /root/.ssh
+# Prevent config files from being filled to infinity by force of stop and restart the container
+echo "" > /root/.ssh/config
+echo -e "Host *\n\tStrictHostKeyChecking no\n" >> /root/.ssh/config
+
+if [ ! -z "$SSH_KEY" ]; then
+ echo $SSH_KEY > /root/.ssh/id_rsa.base64
+ base64 -d /root/.ssh/id_rsa.base64 > /root/.ssh/id_rsa
+ chmod 600 /root/.ssh/id_rsa
+fi
+
+
+# Set custom webroot
+if [ ! -z "$WEBROOT" ]; then
+ sed -i "s#root /var/www/html;#root ${WEBROOT};#g" /etc/nginx/sites-available/default.conf
+else
+ webroot=/var/www/html
+fi
 
 # Enables 404 pages through php index
 if [ ! -z "$PHP_CATCHALL" ]; then
  sed -i 's#try_files $uri $uri/ =404;#try_files $uri $uri/ /index.php?$args;#g' /etc/nginx/conf.d/default.conf
 fi
-
 
 # Enable custom nginx config files if they exist
 if [ -f /var/www/html/conf/nginx/nginx.conf ]; then
@@ -32,10 +54,18 @@ if [ -f /var/www/html/conf/nginx/nginx-site.conf ]; then
   cp /var/www/html/conf/nginx/nginx-site.conf /etc/nginx/conf.d/default.conf
 fi
 
+# Display errors in docker logs
+if [ ! -z "$PHP_ERRORS_STDERR" ]; then
+  echo "log_errors = On" >> ${php_vars}
+  echo "error_log = /dev/stderr" >> ${php_vars}
+fi
 
-
-# sed -i "s/server_tokens off;/server_tokens on;/g" /etc/nginx/nginx.conf
-
+# Display Version Details or not
+if [[ "$HIDE_NGINX_HEADERS" == "0" ]] ; then
+ sed -i "s/server_tokens off;/server_tokens on;/g" /etc/nginx/nginx.conf
+else
+ sed -i "s/expose_php = On/expose_php = Off/g" /usr/local/etc/php-fpm.conf
+fi
 
 # Pass real-ip to logs when behind ELB, etc
 if [[ "$REAL_IP_HEADER" == "1" ]] ; then
@@ -46,13 +76,17 @@ if [[ "$REAL_IP_HEADER" == "1" ]] ; then
  fi
 fi
 
-# Set the desired timezone
-# echo date.timezone=$(cat /etc/TZ) > /etc/php/conf.d/timezone.ini
-
-# Display errors in docker logs
-if [ ! -z "$PHP_ERRORS_STDERR" ]; then
-  echo "log_errors = On" >> ${php_vars}
-  echo "error_log = /dev/stderr" >> ${php_vars}
+if [ ! -z "$PUID" ]; then
+  if [ -z "$PGID" ]; then
+    PGID=${PUID}
+  fi
+  deluser www-data
+  addgroup -g ${PGID} www-data
+  adduser -D -S -h /var/cache/www-data -s /sbin/nologin -G www-data -u ${PUID} www-data
+else
+  if [ -z "$SKIP_CHOWN" ]; then
+    chown -Rf www-data.www-data /var/www/html
+  fi
 fi
 
 echo '-------- run laravel scripts ----------'
@@ -108,17 +142,32 @@ echo '-------- run laravel scripts end  ----------'
 
 # Run custom scripts
 if [[ "$RUN_SCRIPTS" == "1" ]] ; then
-  if [ -d "/var/www/html/scripts/" ]; then
-    # make scripts executable incase they aren't
-    chmod -Rf 750 /var/www/html/scripts/*; sync;
+  scripts_dir="${SCRIPTS_DIR:-/var/www/html/scripts}"
+  if [ -d "$scripts_dir" ]; then
+    if [ -z "$SKIP_CHMOD" ]; then
+      # make scripts executable incase they aren't
+      chmod -Rf 750 $scripts_dir; sync;
+    fi
     # run scripts in number order
-    for i in `ls /var/www/html/scripts/`; do /var/www/html/scripts/$i ; done
+    for i in `ls $scripts_dir`; do $scripts_dir/$i ; done
   else
     echo "Can't find script directory"
   fi
 fi
 
 
+if [ -z "$SKIP_COMPOSER" ]; then
+    # Try auto install for composer
+    if [ -f "/var/www/html/composer.lock" ]; then
+        if [ "$APPLICATION_ENV" == "development" ]; then
+            composer global require hirak/prestissimo
+            composer install --working-dir=/var/www/html
+        else
+            composer global require hirak/prestissimo
+            composer install --no-dev --working-dir=/var/www/html
+        fi
+    fi
+fi
 
 echo '-------- run start scripts end  ----------'
 

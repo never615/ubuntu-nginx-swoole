@@ -27,25 +27,8 @@ RUN echo 'root:admin123' | chpasswd
 # 设置时区
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-#COPY sources.list.tuna /etc/apt/sources.list
 
-#RUN apt install -y apt-transport-https &&\
-#    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32 &&\
-#    cp /etc/apt/trusted.gpg /etc/apt/trusted.gpg.d &&\
-#    apt-get update &&\
-#    apt-get install -y wget
-
-
-#RUN wget --no-check-certificate http://security.ubuntu.com/ubuntu/pool/main/c/ca-certificates/ca-certificates_20210119~20.04.2_all.deb &&\
-#    dpkg -r --force-depends ca-certificates &&\
-#    dpkg -i ca-certificates_20210119~20.04.2_all.deb &&\
-#    rm -rf ca-certificates_20210119~20.04.2_all.deb
-
-#RUN sed -i s@/archive.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list &&\
-#    sed -i s@/security.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list &&\
-#    apt-get clean &&\
-#    apt-get update &&\
-
+# ------------ 1. install --------------
 
 # 安装其他常用库 lrzsz
 RUN apt-get update \
@@ -80,7 +63,6 @@ RUN apt-get update \
     && echo "deb [signed-by=/etc/apt/keyrings/pgdg.gpg] http://apt.postgresql.org/pub/repos/apt jammy-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update \
     && apt-get install -y yarn \
-    && apt-get install -y mysql-client \
     && apt-get install -y postgresql-client-$POSTGRES_VERSION \
     && apt-get -y autoremove \
     && apt-get clean \
@@ -88,6 +70,20 @@ RUN apt-get update \
 
 RUN pecl install mongodb
 
+
+# Install ngixn
+# forward request and error logs to docker log collector
+RUN apt-get update &&\
+  apt-get install -y nginx &&\
+  ln -sf /dev/stdout /var/log/nginx/access.log &&\
+  ln -sf /dev/stderr /var/log/nginx/error.log &&\
+  mkdir -p /usr/share/nginx/run &&\
+  apt-get clean &&\
+  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+
+
+# ------------ 2. config --------------
 
 # 配置启用opcache
 # RUN echo "opcache.validate_timestamps=0    //生产环境中配置为0" >> ${php_vars_dir}/10-opcache.ini &&\
@@ -103,25 +99,18 @@ ADD conf/supervisord.conf /etc/supervisor/supervisord.conf
 COPY conf/supervisord.d/ /etc/supervisor/conf.d/
 
 
-
-# Install ngixn
-# forward request and error logs to docker log collector
-RUN apt-get update &&\
-  apt-get install -y nginx &&\
-  ln -sf /dev/stdout /var/log/nginx/access.log &&\
-  ln -sf /dev/stderr /var/log/nginx/error.log &&\
-  mkdir -p /usr/share/nginx/run &&\
-  apt-get clean &&\
-  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 # Copy our nginx config
 RUN rm -Rf /etc/nginx/nginx.conf
 ADD conf/nginx.conf /etc/nginx/nginx.conf
 
 # nginx site conf
 RUN rm -Rf /var/www/* &&\
-  mkdir -p /var/www/html/
+  mkdir /var/www/html/
 ADD conf/nginx-site.conf /etc/nginx/conf.d/default.conf
+
+## php config
+COPY php.ini ${php_vars}
+
 
 #Add your cron file
 ADD conf/cron /etc/cron.d/crontabfile
@@ -145,8 +134,6 @@ RUN setcap "cap_net_bind_service=+ep" /usr/bin/php8.3
 
 # COPY start-container /usr/local/bin/start-container
 # COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY php.ini ${php_vars}
-# RUN chmod +x /usr/local/bin/start-container
 
 EXPOSE 80
 
