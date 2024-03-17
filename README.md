@@ -4,3 +4,5 @@
 sh /horizon_exist.sh
 
 
+mac 本地编译: ` docker build . -t never615/ubuntu-nginx-swoole:latest
+`

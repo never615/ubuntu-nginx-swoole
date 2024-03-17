@@ -107,6 +107,7 @@ ADD conf/nginx.conf /etc/nginx/nginx.conf
 RUN rm -Rf /var/www/* &&\
   mkdir /var/www/html/
 ADD conf/nginx-site.conf /etc/nginx/conf.d/default.conf
+RUN chmod 755 /etc/nginx/conf.d/default.conf
 
 ## php config
 COPY php.ini ${php_vars}
@@ -114,7 +115,7 @@ COPY php.ini ${php_vars}
 
 #Add your cron file
 ADD conf/cron /etc/cron.d/crontabfile
-RUN chmod 0644 /etc/cron.d/crontabfile
+RUN chmod 755 /etc/cron.d/crontabfile
 
 
 # Add Scripts

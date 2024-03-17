@@ -21,24 +21,24 @@ echo '-------- run start scripts start  ----------'
 
 # Disable Strict Host checking for non interactive git clones
 
-mkdir -p -m 0700 /root/.ssh
-# Prevent config files from being filled to infinity by force of stop and restart the container
-echo "" > /root/.ssh/config
-echo -e "Host *\n\tStrictHostKeyChecking no\n" >> /root/.ssh/config
-
-if [ ! -z "$SSH_KEY" ]; then
- echo $SSH_KEY > /root/.ssh/id_rsa.base64
- base64 -d /root/.ssh/id_rsa.base64 > /root/.ssh/id_rsa
- chmod 600 /root/.ssh/id_rsa
-fi
-
-
-# Set custom webroot
-if [ ! -z "$WEBROOT" ]; then
- sed -i "s#root /var/www/html;#root ${WEBROOT};#g" /etc/nginx/sites-available/default.conf
-else
- webroot=/var/www/html
-fi
+#mkdir -p -m 0700 /root/.ssh
+## Prevent config files from being filled to infinity by force of stop and restart the container
+#echo "" > /root/.ssh/config
+#echo -e "Host *\n\tStrictHostKeyChecking no\n" >> /root/.ssh/config
+#
+#if [ ! -z "$SSH_KEY" ]; then
+# echo $SSH_KEY > /root/.ssh/id_rsa.base64
+# base64 -d /root/.ssh/id_rsa.base64 > /root/.ssh/id_rsa
+# chmod 600 /root/.ssh/id_rsa
+#fi
+#
+#
+## Set custom webroot
+#if [ ! -z "$WEBROOT" ]; then
+# sed -i "s#root /var/www/html;#root ${WEBROOT};#g" /etc/nginx/sites-available/default.conf
+#else
+# webroot=/var/www/html
+#fi
 
 # Enables 404 pages through php index
 if [ ! -z "$PHP_CATCHALL" ]; then
@@ -60,12 +60,6 @@ if [ ! -z "$PHP_ERRORS_STDERR" ]; then
   echo "error_log = /dev/stderr" >> ${php_vars}
 fi
 
-# Display Version Details or not
-if [[ "$HIDE_NGINX_HEADERS" == "0" ]] ; then
- sed -i "s/server_tokens off;/server_tokens on;/g" /etc/nginx/nginx.conf
-else
- sed -i "s/expose_php = On/expose_php = Off/g" /usr/local/etc/php-fpm.conf
-fi
 
 # Pass real-ip to logs when behind ELB, etc
 if [[ "$REAL_IP_HEADER" == "1" ]] ; then
